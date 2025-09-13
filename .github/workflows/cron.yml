@@ -28,13 +28,14 @@ jobs:
           TO_DATE:           ${{ secrets.TO_DATE }}
           AUTH_HEADER_TYPE:  ${{ secrets.AUTH_HEADER_TYPE }}
           AUTH_HEADER_NAME:  ${{ secrets.AUTH_HEADER_NAME }}
+          X_RAPIDAPI_HOST:   ${{ secrets.X_RAPIDAPI_HOST }}
           ENDPOINT_FIXTURES: ${{ secrets.ENDPOINT_FIXTURES }}
           ENDPOINT_FIXTURE_STATS: ${{ secrets.ENDPOINT_FIXTURE_STATS }}
           ENDPOINT_TEAMS:    ${{ secrets.ENDPOINT_TEAMS }}
-          ENDPOINT_STANDINGS:${{ secrets.ENDPOINT_STANDINGS }}
-          STAT_LABEL_CORNERS:${{ secrets.STAT_LABEL_CORNERS }}
-          STAT_LABEL_YELLOW: ${{ secrets.STAT_LABEL_YELLOW }}
-          STAT_LABEL_RED:    ${{ secrets.STAT_LABEL_RED }}
+          ENDPOINT_STANDINGS: ${{ secrets.ENDPOINT_STANDINGS }}
+          STAT_LABEL_CORNERS: ${{ secrets.STAT_LABEL_CORNERS }}
+          STAT_LABEL_YELLOW:  ${{ secrets.STAT_LABEL_YELLOW }}
+          STAT_LABEL_RED:     ${{ secrets.STAT_LABEL_RED }}
 
       - name: Commit files
         run: |
