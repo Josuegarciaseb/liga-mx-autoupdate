@@ -1,0 +1,45 @@
+name: fetch-liga-mx
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # diario 12:00 UTC (~06:00 MX)
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch stats
+        run: python fetch_stats.py
+        env:
+          SPORTAPI_BASE_URL: ${{ secrets.SPORTAPI_BASE_URL }}
+          SPORTAPI_KEY:      ${{ secrets.SPORTAPI_KEY }}
+          LEAGUE_ID:         ${{ secrets.LEAGUE_ID }}
+          SEASON:            ${{ secrets.SEASON }}
+          FROM_DATE:         ${{ secrets.FROM_DATE }}
+          TO_DATE:           ${{ secrets.TO_DATE }}
+          AUTH_HEADER_TYPE:  ${{ secrets.AUTH_HEADER_TYPE }}
+          AUTH_HEADER_NAME:  ${{ secrets.AUTH_HEADER_NAME }}
+          ENDPOINT_FIXTURES: ${{ secrets.ENDPOINT_FIXTURES }}
+          ENDPOINT_FIXTURE_STATS: ${{ secrets.ENDPOINT_FIXTURE_STATS }}
+          ENDPOINT_TEAMS:    ${{ secrets.ENDPOINT_TEAMS }}
+          ENDPOINT_STANDINGS:${{ secrets.ENDPOINT_STANDINGS }}
+          STAT_LABEL_CORNERS:${{ secrets.STAT_LABEL_CORNERS }}
+          STAT_LABEL_YELLOW: ${{ secrets.STAT_LABEL_YELLOW }}
+          STAT_LABEL_RED:    ${{ secrets.STAT_LABEL_RED }}
+
+      - name: Commit files
+        run: |
+          git config user.name "autobot"
+          git config user.email "autobot@users.noreply.github.com"
+          git add -A
+          git commit -m "auto-update $(date -u +%F)" || echo "no changes"
+          git push
