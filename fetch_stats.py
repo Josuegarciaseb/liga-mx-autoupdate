@@ -1,6 +1,5 @@
-# fetch_stats.py  — versión corregida (sin List[Dict, Any])
+# fetch_stats.py — versión mínima sin type hints conflictivos
 import os, csv, datetime, time
-from typing import List, Dict, Any, Optional
 from sportapi_adapter import (
     list_fixtures_by_team, fixture_statistics, extract_basic_fields,
     STAT_LABELS, get_stat
@@ -14,22 +13,19 @@ TO_DATE   = os.getenv("TO_DATE",   "2025-12-20")
 
 OUT_DIR = "data"
 
-def to_row(fix, stats_response, team_id) -> list | None:
-
+def to_row(fix, stats_response, team_id):
     b = extract_basic_fields(fix)
-    if b["status_short"] not in ("FT", "AET", "PEN"):  # ajusta si tu API usa otros códigos
+    if b["status_short"] not in ("FT", "AET", "PEN"):
         return None
 
     is_home = (b["home_id"] == team_id)
     gf = b["goals_home"] if is_home else b["goals_away"]
     ga = b["goals_away"] if is_home else b["goals_home"]
 
-    # stats_response suele traer 2 entradas (home/away) con team.id y lista "statistics"
-    home_stats: List[Dict[str, Any]] = []
-    away_stats: List[Dict[str, Any]] = []
+    home_stats, away_stats = [], []
     home_id, away_id = b["home_id"], b["away_id"]
     for entry in stats_response or []:
-        tid = entry.get("team", {}).get("id") or entry.get("team_id")
+        tid = (entry.get("team") or {}).get("id") or entry.get("team_id")
         st  = entry.get("statistics", entry.get("stats", []))
         if tid == home_id: home_stats = st
         if tid == away_id: away_stats = st
@@ -37,7 +33,6 @@ def to_row(fix, stats_response, team_id) -> list | None:
     c_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["corners"])
     c_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["corners"])
     c_tot  = (c_for or 0) + (c_agn or 0) if (c_for is not None and c_agn is not None) else None
-
     y_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["yellow"])
     y_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["yellow"])
     r_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["red"])
@@ -79,7 +74,7 @@ def main():
                 row = to_row(fix, stats, team)
                 if row:
                     w.writerow(row)
-                time.sleep(0.4)  # cuida el rate limit si cargas muchos equipos
+                time.sleep(0.4)
 
     print("OK:", out_path)
 
