@@ -1,4 +1,4 @@
-# fetch_stats.py — versión mínima sin type hints conflictivos
+# fetch_stats.py — versión forzada sin type hints problemáticos
 import os, csv, datetime, time
 from sportapi_adapter import (
     list_fixtures_by_team, fixture_statistics, extract_basic_fields,
@@ -13,7 +13,7 @@ TO_DATE   = os.getenv("TO_DATE",   "2025-12-20")
 
 OUT_DIR = "data"
 
-def to_row(fix, stats_response, team_id):
+def to_row_v2(fix, stats_response, team_id):
     b = extract_basic_fields(fix)
     if b["status_short"] not in ("FT", "AET", "PEN"):
         return None
@@ -31,12 +31,12 @@ def to_row(fix, stats_response, team_id):
         if tid == away_id: away_stats = st
 
     c_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["corners"])
-    c_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["corners"])
+    c_agn  = get_stat(away_stats if is_home else home_stats,   STAT_LABELS["corners"])
     c_tot  = (c_for or 0) + (c_agn or 0) if (c_for is not None and c_agn is not None) else None
     y_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["yellow"])
-    y_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["yellow"])
+    y_agn  = get_stat(away_stats if is_home else home_stats,   STAT_LABELS["yellow"])
     r_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["red"])
-    r_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["red"])
+    r_agn  = get_stat(away_stats if is_home else home_stats,   STAT_LABELS["red"])
 
     return [
         b["fixture_id"], b["fixture_date"],
@@ -71,7 +71,7 @@ def main():
                 if not fixture_id:
                     continue
                 stats = fixture_statistics(fixture_id)
-                row = to_row(fix, stats, team)
+                row = to_row_v2(fix, stats, team)  # <- usamos la nueva función
                 if row:
                     w.writerow(row)
                 time.sleep(0.4)
