@@ -13,7 +13,7 @@ TO_DATE   = os.getenv("TO_DATE",   "2025-12-20")
 
 OUT_DIR = "data"
 
-def to_row(fix: Dict[str, Any], stats_response: List[Dict, Any], team_id: int) -> Optional[List[Any]]:
+def to_row(fix: Dict[str, Any], stats_response: List[Dict[str, Any]], team_id: int) -> Optional[List[Any]]:
     b = extract_basic_fields(fix)
     if b["status_short"] not in ("FT", "AET", "PEN"):  # ajusta si tu API usa otros códigos
         return None
