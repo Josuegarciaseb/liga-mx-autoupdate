@@ -1,3 +1,4 @@
+# fetch_stats.py  — versión corregida (sin List[Dict, Any])
 import os, csv, datetime, time
 from typing import List, Dict, Any, Optional
 from sportapi_adapter import (
@@ -19,48 +20,43 @@ def to_row(
     team_id: int
 ) -> Optional[List[Any]]:
     """
-    Convierte un fixture + estadísticas en una fila lista para guardar en CSV.
-
-    fix: diccionario con datos básicos del fixture
-    stats_response: lista de diccionarios con estadísticas
-    team_id: id del equipo (local o visitante)
+    Convierte fixture + stats en una fila de CSV desde la perspectiva del team_id.
     """
-    if not fix or not stats_response:
+    b = extract_basic_fields(fix)
+    if b["status_short"] not in ("FT", "AET", "PEN"):  # ajusta si tu API usa otros códigos
         return None
 
-    fixture_id = fix.get("fixture_id")
-    date = fix.get("fixture_date")
-    home_team = fix.get("home_name")
-    away_team = fix.get("away_name")
-    goals_home = fix.get("goals_home")
-    goals_away = fix.get("goals_away")
+    is_home = (b["home_id"] == team_id)
+    gf = b["goals_home"] if is_home else b["goals_away"]
+    ga = b["goals_away"] if is_home else b["goals_home"]
 
-    # Buscar estadísticas específicas
-    corners = None
-    yellows = None
-    reds = None
-    for s in stats_response:
-        stype = (s.get("type") or s.get("name") or "").lower()
-        if "corner" in stype:
-            corners = s.get("value")
-        elif "yellow" in stype:
-            yellows = s.get("value")
-        elif "red" in stype:
-            reds = s.get("value")
+    # stats_response suele traer 2 entradas (home/away) con team.id y lista "statistics"
+    home_stats: List[Dict[str, Any]] = []
+    away_stats: List[Dict[str, Any]] = []
+    home_id, away_id = b["home_id"], b["away_id"]
+    for entry in stats_response or []:
+        tid = entry.get("team", {}).get("id") or entry.get("team_id")
+        st  = entry.get("statistics", entry.get("stats", []))
+        if tid == home_id: home_stats = st
+        if tid == away_id: away_stats = st
+
+    c_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["corners"])
+    c_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["corners"])
+    c_tot  = (c_for or 0) + (c_agn or 0) if (c_for is not None and c_agn is not None) else None
+
+    y_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["yellow"])
+    y_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["yellow"])
+    r_for  = get_stat(home_stats if is_home else away_stats, STAT_LABELS["red"])
+    r_agn  = get_stat(away_stats if is_home else home_stats, STAT_LABELS["red"])
 
     return [
-        fixture_id,
-        date,
-        home_team,
-        away_team,
-        goals_home,
-        goals_away,
-        team_id,
-        corners,
-        yellows,
-        reds,
+        b["fixture_id"], b["fixture_date"],
+        b["home_name"], b["away_name"],
+        "Local" if is_home else "Visitante",
+        gf, ga,
+        c_for, c_agn, c_tot,
+        y_for, y_agn, r_for, r_agn
     ]
-
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
