@@ -14,14 +14,8 @@ TO_DATE   = os.getenv("TO_DATE",   "2025-12-20")
 
 OUT_DIR = "data"
 
-def to_row(
-    fix: Dict[str, Any],
-    stats_response: List[Dict[str, Any]],
-    team_id: int
-) -> Optional[List[Any]]:
-    """
-    Convierte fixture + stats en una fila de CSV desde la perspectiva del team_id.
-    """
+def to_row(fix, stats_response, team_id) -> list | None:
+
     b = extract_basic_fields(fix)
     if b["status_short"] not in ("FT", "AET", "PEN"):  # ajusta si tu API usa otros códigos
         return None
