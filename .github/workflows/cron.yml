@@ -2,15 +2,16 @@ name: fetch-liga-mx
 
 on:
   schedule:
-    - cron: "0 12 * * *"   # diario 12:00 UTC (~06:00 MX)
-  workflow_dispatch:
+    - cron: "0 14 * * *"   # 14:00 UTC = ~08:00 CDMX (da margen tras partidos nocturnos)
+  workflow_dispatch:        # permite disparo manual desde la UI de GitHub
 
 permissions:
-  contents: write   # necesario para poder commitear al repo
+  contents: write           # necesario para commitear al repo
 
 jobs:
   run:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,9 +19,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install -r requirements.txt
+      - name: Instalar dependencias
+        run: pip install -q -r requirements.txt
 
-      - name: Check config (secrets presentes)
+      # ── Validar que los secrets obligatorios existen ──────────────────────
+      - name: Verificar secrets obligatorios
         run: |
           python - << 'PY'
           import os, sys
@@ -29,12 +32,13 @@ jobs:
           if missing:
               print("Faltan secrets:", ", ".join(missing))
               sys.exit(1)
-          print("Secrets OK")
+          print("Secrets OK:", ", ".join(required))
           PY
         env:
           SPORTAPI_BASE_URL: ${{ secrets.SPORTAPI_BASE_URL }}
           SPORTAPI_KEY:      ${{ secrets.SPORTAPI_KEY }}
 
+      # ── Script principal ──────────────────────────────────────────────────
       - name: Fetch stats
         run: python fetch_stats.py
         env:
@@ -44,23 +48,40 @@ jobs:
           SEASON:            ${{ secrets.SEASON }}
           FROM_DATE:         ${{ secrets.FROM_DATE }}
           TO_DATE:           ${{ secrets.TO_DATE }}
-          # Opcionales; si no existen, el código usa defaults.
-          AUTH_HEADER_TYPE:  ${{ secrets.AUTH_HEADER_TYPE }}
-          AUTH_HEADER_NAME:  ${{ secrets.AUTH_HEADER_NAME }}
-          ENDPOINT_FIXTURES: ${{ secrets.ENDPOINT_FIXTURES }}
+          # Opcionales; si no existen, el código usa defaults
+          AUTH_HEADER_TYPE:       ${{ secrets.AUTH_HEADER_TYPE }}
+          AUTH_HEADER_NAME:       ${{ secrets.AUTH_HEADER_NAME }}
+          ENDPOINT_FIXTURES:      ${{ secrets.ENDPOINT_FIXTURES }}
           ENDPOINT_FIXTURE_STATS: ${{ secrets.ENDPOINT_FIXTURE_STATS }}
-          ENDPOINT_TEAMS:    ${{ secrets.ENDPOINT_TEAMS }}
-          ENDPOINT_STANDINGS: ${{ secrets.ENDPOINT_STANDINGS }}
-          STAT_LABEL_CORNERS: ${{ secrets.STAT_LABEL_CORNERS }}
-          STAT_LABEL_YELLOW:  ${{ secrets.STAT_LABEL_YELLOW }}
-          STAT_LABEL_RED:     ${{ secrets.STAT_LABEL_RED }}
-          EXTRA_HEADER_NAME:  ${{ secrets.EXTRA_HEADER_NAME }}
-          EXTRA_HEADER_VALUE: ${{ secrets.EXTRA_HEADER_VALUE }}
+          ENDPOINT_TEAMS:         ${{ secrets.ENDPOINT_TEAMS }}
+          ENDPOINT_STANDINGS:     ${{ secrets.ENDPOINT_STANDINGS }}
+          STAT_LABEL_CORNERS:     ${{ secrets.STAT_LABEL_CORNERS }}
+          STAT_LABEL_YELLOW:      ${{ secrets.STAT_LABEL_YELLOW }}
+          STAT_LABEL_RED:         ${{ secrets.STAT_LABEL_RED }}
+          EXTRA_HEADER_NAME:      ${{ secrets.EXTRA_HEADER_NAME }}
+          EXTRA_HEADER_VALUE:     ${{ secrets.EXTRA_HEADER_VALUE }}
 
-      - name: Commit files
+      # ── Validar que el CSV tiene contenido ───────────────────────────────
+      - name: Verificar CSV generado
         run: |
-          git config user.name "autobot"
+          TODAY=$(date -u +%F)
+          CSV="data/partidos_${TODAY}.csv"
+          if [ ! -f "$CSV" ]; then
+            echo "No se generó $CSV — puede que no haya partidos nuevos hoy."
+            exit 0
+          fi
+          LINES=$(wc -l < "$CSV")
+          echo "Filas en $CSV: $LINES (header + datos)"
+          if [ "$LINES" -le 1 ]; then
+            echo "[warn] CSV sin datos (solo header). Revisa logs del paso anterior."
+          fi
+
+      # ── Commitear cambios ────────────────────────────────────────────────
+      - name: Commit y push
+        run: |
+          git config user.name  "autobot"
           git config user.email "autobot@users.noreply.github.com"
           git add -A
-          git commit -m "auto-update $(date -u +%F)" || echo "no changes"
+          # Si no hay cambios, el commit falla silenciosamente (no error)
+          git commit -m "auto-update $(date -u +%F)" || echo "Sin cambios nuevos"
           git push
