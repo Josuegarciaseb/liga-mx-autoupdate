@@ -24,7 +24,7 @@ jobs:
         run: |
           python - << 'PY'
           import os, sys
-          required = ["SPORTAPI_BASE_URL","SPORTAPI_KEY","LEAGUE_ID","SEASON","FROM_DATE","TO_DATE","X_RAPIDAPI_HOST"]
+          required = ["SPORTAPI_BASE_URL", "SPORTAPI_KEY"]
           missing = [k for k in required if not os.getenv(k)]
           if missing:
               print("Faltan secrets:", ", ".join(missing))
@@ -34,11 +34,6 @@ jobs:
         env:
           SPORTAPI_BASE_URL: ${{ secrets.SPORTAPI_BASE_URL }}
           SPORTAPI_KEY:      ${{ secrets.SPORTAPI_KEY }}
-          LEAGUE_ID:         ${{ secrets.LEAGUE_ID }}
-          SEASON:            ${{ secrets.SEASON }}
-          FROM_DATE:         ${{ secrets.FROM_DATE }}
-          TO_DATE:           ${{ secrets.TO_DATE }}
-          X_RAPIDAPI_HOST:   ${{ secrets.X_RAPIDAPI_HOST }}
 
       - name: Fetch stats
         run: python fetch_stats.py
@@ -49,7 +44,6 @@ jobs:
           SEASON:            ${{ secrets.SEASON }}
           FROM_DATE:         ${{ secrets.FROM_DATE }}
           TO_DATE:           ${{ secrets.TO_DATE }}
-          X_RAPIDAPI_HOST:   ${{ secrets.X_RAPIDAPI_HOST }}
           # Opcionales; si no existen, el código usa defaults.
           AUTH_HEADER_TYPE:  ${{ secrets.AUTH_HEADER_TYPE }}
           AUTH_HEADER_NAME:  ${{ secrets.AUTH_HEADER_NAME }}
@@ -60,6 +54,8 @@ jobs:
           STAT_LABEL_CORNERS: ${{ secrets.STAT_LABEL_CORNERS }}
           STAT_LABEL_YELLOW:  ${{ secrets.STAT_LABEL_YELLOW }}
           STAT_LABEL_RED:     ${{ secrets.STAT_LABEL_RED }}
+          EXTRA_HEADER_NAME:  ${{ secrets.EXTRA_HEADER_NAME }}
+          EXTRA_HEADER_VALUE: ${{ secrets.EXTRA_HEADER_VALUE }}
 
       - name: Commit files
         run: |

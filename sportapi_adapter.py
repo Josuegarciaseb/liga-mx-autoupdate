@@ -8,6 +8,10 @@ API_KEY  = os.getenv("SPORTAPI_KEY", "")
 AUTH_HEADER_TYPE = os.getenv("AUTH_HEADER_TYPE", "Bearer")
 AUTH_HEADER_NAME = os.getenv("AUTH_HEADER_NAME", "Authorization")
 
+# Header extra opcional (ej. x-rapidapi-host para RapidAPI)
+EXTRA_HEADER_NAME  = os.getenv("EXTRA_HEADER_NAME", "")
+EXTRA_HEADER_VALUE = os.getenv("EXTRA_HEADER_VALUE", "")
+
 # Endpoints configurables
 EP_FIXTURES      = os.getenv("ENDPOINT_FIXTURES", "/fixtures")
 EP_FIXTURE_STATS = os.getenv("ENDPOINT_FIXTURE_STATS", "/fixtures/statistics")
@@ -36,9 +40,13 @@ FIELD_MAP = {
 
 def _headers():
     assert API_KEY, "Falta SPORTAPI_KEY"
-    if AUTH_HEADER_NAME.lower() == "authorization":
-        return {AUTH_HEADER_NAME: f"{AUTH_HEADER_TYPE} {API_KEY}"}
-    return {AUTH_HEADER_NAME: API_KEY}
+    if AUTH_HEADER_TYPE:
+        h = {AUTH_HEADER_NAME: f"{AUTH_HEADER_TYPE} {API_KEY}"}
+    else:
+        h = {AUTH_HEADER_NAME: API_KEY}
+    if EXTRA_HEADER_NAME and EXTRA_HEADER_VALUE:
+        h[EXTRA_HEADER_NAME] = EXTRA_HEADER_VALUE
+    return h
 
 def api_get(path: str, params: Dict[str, Any]) -> Dict[str, Any]:
     assert BASE_URL, "Falta SPORTAPI_BASE_URL"

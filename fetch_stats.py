@@ -1,5 +1,7 @@
 # fetch_stats.py — versión forzada sin type hints problemáticos
 import os, csv, datetime, time
+from dotenv import load_dotenv
+load_dotenv()
 from sportapi_adapter import (
     list_fixtures_by_team, fixture_statistics, extract_basic_fields,
     STAT_LABELS, get_stat
